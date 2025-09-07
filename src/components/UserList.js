@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function UserList({ userList }) {
+export default function UserList({ userList, onDelete, onEdit }) {
   return (
     <>
       <div className="overflow-x-auto">
@@ -8,20 +8,36 @@ export default function UserList({ userList }) {
           {/* head */}
           <thead>
             <tr>
-              <th></th>
+              <th>ID</th>
               <th>Name</th>
               <th>Email</th>
-              <th>Role</th>
+              <th>Vai trò</th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <th>1</th>
-              <td>Cy Ganderton</td>
-              <td>Quality Control Specialist</td>
-              <td>Blue</td>
-            </tr>
-            {/* row 2 */}
+            {userList.map((user, index) => (
+              <tr key={user.id}>
+                <th>{index + 1}</th>
+                <td>{user.ten}</td>
+                <td>{user.email}</td>
+                <td>{user.vaitro}</td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-primary mr-2"
+                    onClick={() => onEdit(user)}
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    className="btn btn-sm btn-error"
+                    onClick={() => onDelete(user.id)}
+                  >
+                    Xóa
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
