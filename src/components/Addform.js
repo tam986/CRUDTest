@@ -31,10 +31,10 @@ export default function AddForm({ onSubmit, onClose, duLieuBanDau }) {
     <>
       <form
         onSubmit={handleSubmit}
-        className="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4 absolute mt-4 top-2/2 left-2/4 -translate-x-1/2 -translate-y-1/2 z-1000 shadow-lg"
+        className=" bg-base-200 border-base-300 rounded-box w-xs border p-4 absolute mt-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-100 shadow-lg"
       >
         <label className="flex justify-between items-center mb-4">
-          <legend className="fieldset-legend">
+          <legend className="">
             {duLieuBanDau ? "Sửa nhân viên" : "Thêm nhân viên"}
           </legend>
           <button type="button" onClick={onClose}>
