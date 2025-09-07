@@ -9,6 +9,7 @@ import {
   RandomNhanVien,
   xoaNhanVien,
   xoaNhanVienAll,
+  timKiemNhanVien,
 } from "./lib/indexedDB";
 
 function App() {
@@ -18,8 +19,10 @@ function App() {
   const [userList, setUserList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemOnePage = 100;
+  const [itemOnePage] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
+  const [search, setSearch] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   const vaiTroList = [
     "Nhân viên",
@@ -80,28 +83,57 @@ function App() {
   };
 
   const loadPage = useCallback(async () => {
+    if (!csdl) return;
     setLoading(true);
-    const db = await moCSDL();
-    const skip = (currentPage - 1) * itemOnePage;
-    const data = await paginate(db, itemOnePage, skip);
-    const count = await getCount(db);
+    // const skip = (currentPage - 1) * itemOnePage;
+    const data = await paginate(csdl, itemOnePage, currentPage);
+    const count = await getCount(csdl);
     setUserList(data.results);
     setTotalCount(count);
     setLoading(false);
-  }, [currentPage, itemOnePage]);
+  }, [csdl, currentPage, itemOnePage]);
 
   useEffect(() => {
     async function khoiTaoCSDL() {
       const db = await moCSDL();
       setCSDL(db);
-      loadPage();
     }
     khoiTaoCSDL();
-  }, [loadPage]);
+  }, []);
 
   useEffect(() => {
-    loadPage();
-  }, [currentPage, loadPage]);
+    if (csdl && !isSearching) {
+      loadPage();
+    }
+  }, [csdl, currentPage, loadPage, isSearching]);
+
+  const handleSearch = useCallback(
+    async (keyword) => {
+      if (!csdl) return;
+      setSearch(keyword);
+      if (keyword.trim() === "") {
+        setIsSearching(false);
+        setCurrentPage(1);
+        loadPage();
+        return;
+      }
+      setIsSearching(true);
+      setLoading(true);
+      console.log("Tìm kiếm:", keyword);
+      try {
+        const results = await timKiemNhanVien(csdl, keyword);
+        setUserList(results);
+        setTotalCount(results.length);
+        setCurrentPage(1);
+      } catch (error) {
+        console.error("Search error:", error);
+        setUserList([]);
+        setTotalCount(0);
+      }
+      setLoading(false);
+    },
+    [csdl, loadPage]
+  );
   const tao10kNhanVien = async () => {
     setLoading(true);
     const danhSachRandom = [];
@@ -111,6 +143,8 @@ function App() {
     }
     await RandomNhanVien(csdl, danhSachRandom);
     setCurrentPage(1);
+    setSearch("");
+    setIsSearching(false);
     loadPage();
     alert("Tạo 10k ok!");
     setLoading(false);
@@ -125,6 +159,8 @@ function App() {
   const themNhanVienMoi = async (nhanVien) => {
     console.log("Thêm:", nhanVien);
     await luuNhanVien(csdl, nhanVien);
+    setSearch("");
+    setIsSearching(false);
     loadPage();
     setFormOpen(false);
   };
@@ -132,6 +168,8 @@ function App() {
   const updateNhanVien = async (nhanVien) => {
     console.log("Sửa:", nhanVien);
     await luuNhanVien(csdl, nhanVien);
+    setSearch("");
+    setIsSearching(false);
     loadPage();
     setNhanVienDangSua(null);
     setFormOpen(false);
@@ -140,9 +178,13 @@ function App() {
   const xoaNhanVienFn = async (id) => {
     console.log("Xóa:", id);
     await xoaNhanVien(csdl, id);
-    loadPage();
-    if (userList.length === 0 && currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+    if (isSearching) {
+      handleSearch(search);
+    } else {
+      loadPage();
+      if (userList.length === 0 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     }
   };
 
@@ -150,6 +192,8 @@ function App() {
     console.log("Xóa hết");
     await xoaNhanVienAll(csdl);
     setCurrentPage(1);
+    setSearch("");
+    setIsSearching(false);
     loadPage();
   };
 
@@ -157,11 +201,19 @@ function App() {
     setNhanVienDangSua(nhanVien);
     setFormOpen(true);
   };
-
   return (
     <section className="mb-4 p-4 relative">
       <div className="flex justify-between items-center w-full border-b shadow-lg p-4">
         <h1>Quản lý nhân viên</h1>
+        <div className="flex items-center">
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên..."
+            className="input"
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
         <div className="space-x-2">
           <button
             className="btn btn-primary"
@@ -199,7 +251,8 @@ function App() {
           }}
         />
       )}
-      <div className="w-full border-b shadow-lg p-4 absolute  z-10">
+
+      <div className="w-full border-b shadow-lg p-4 absolute z-10">
         <UserList
           userList={userList}
           onEdit={formSua}

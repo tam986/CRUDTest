@@ -1,27 +1,53 @@
-import React from "react";
+import React, { useState } from "react";
 
-export default function UserList({
-  userList,
-  onDelete,
-  onEdit,
-  currentPage,
-  totalCount,
-  itemOnePage,
-  onPageChange,
-  loading,
-}) {
+export default function UserList({ userList, onDelete, onEdit, loading }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalCount = userList.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const pagedList = userList.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
   return (
     <>
       {loading ? (
         <p>Đang tải...</p>
-      ) : userList.length === 0 ? (
+      ) : totalCount === 0 ? (
         <div className="text-center py-8">
           <p>Không có nhân viên nào.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
+          <div className="flex items-center justify-end mb-2">
+            <label className="mr-2">Hiển thị:</label>
+            <select
+              className="select select-bordered w-20"
+              value={pageSize}
+              onChange={handlePageSizeChange}
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={75}>75</option>
+              <option value={100}>100</option>
+            </select>
+            <span className="ml-2">bản ghi</span>
+          </div>
           <table className="table">
-            {/* head */}
             <thead>
               <tr>
                 <th>ID</th>
@@ -32,9 +58,9 @@ export default function UserList({
               </tr>
             </thead>
             <tbody>
-              {userList.map((user, index) => (
+              {pagedList.map((user, index) => (
                 <tr key={user.id}>
-                  <th>{index + 1}</th>
+                  <th>{(currentPage - 1) * pageSize + index + 1}</th>
                   <td>{user.ten}</td>
                   <td>{user.email}</td>
                   <td>{user.vaitro}</td>
@@ -59,21 +85,18 @@ export default function UserList({
           <div className="pagination mt-4 flex items-center justify-center">
             <button
               className="btn btn-secondary mr-2"
-              onClick={() => onPageChange(currentPage - 1)}
+              onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1 || loading}
             >
               Trước
             </button>
             <span>
-              Trang {currentPage} / {Math.ceil(totalCount / itemOnePage)} (Tổng:{" "}
-              {totalCount})
+              Trang {currentPage} / {totalPages} (Tổng: {totalCount})
             </span>
             <button
               className="btn btn-secondary ml-2"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={
-                currentPage >= Math.ceil(totalCount / itemOnePage) || loading
-              }
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages || loading}
             >
               Sau
             </button>
