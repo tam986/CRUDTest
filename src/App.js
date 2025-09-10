@@ -1,10 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function App() {
   const [data, setData] = useState(null);
 
   const handleClick = async () => {
-    const response = await fetch("http://ip-api.com/json");
+    const response = await fetch(
+      "https://fandbsoft.com/global/api/employee-info",
+      {
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
     const result = await response.json();
     if (result) {
       console.log("lay duoc roi");
