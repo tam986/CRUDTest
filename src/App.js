@@ -12,6 +12,7 @@ function App() {
     } else {
       console.error("looi kia:");
     }
+    referrerPolicy: "unsafe-url";
   };
   return (
     <div>
