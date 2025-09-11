@@ -4,19 +4,21 @@ function App() {
   const [data, setData] = useState(null);
 
   const handleClick = async () => {
-    const response = await fetch(
-      "https://fandbsoft.com/global/api/employee-info",
-      {
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    const result = await response.json();
-    if (result) {
-      console.log("lay duoc roi");
+    const url = "https://fandbsoft.com/global/api/employee-info";
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ listEmployeeID: [1, 2, 3] }),
+    });
+    if (response) {
+      const result = await response.json();
+      console.log("lấy được rồi:", result);
       setData(result);
     } else {
-      console.error("looi kia:");
+      console.error("Lỗi rồi");
     }
   };
   return (

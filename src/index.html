@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Postman → Code (fetch)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        font-family: system-ui, Arial, sans-serif;
+        margin: 24px;
+        line-height: 1.5;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      input[type="text"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      textarea {
+        min-height: 180px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        max-width: 900px;
+      }
+      .card {
+        border: 1px solid #8884;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .muted {
+        opacity: 0.8;
+        font-size: 12px;
+      }
+      pre {
+        margin: 0;
+        overflow: auto;
+        white-space: pre;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      button {
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #8884;
+        cursor: pointer;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 900px) {
+        .split {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
+    <!-- Gợi ý: Nếu chạy file trực tiếp (file://) có thể bị CORS. Hãy dùng một HTTP server (vd: npx serve) -->
+    <!-- Endpoint từ ảnh Postman: https://fandbsoft.com/global/api/employee-info -->
+  </head>
+  <body>
+    <h1>Test API (Postman → fetch)</h1>
+    <div class="grid">
+      <div class="card">
+        <div class="row">
+          <label style="flex: 1">
+            <div>Endpoint</div>
+            <input
+              id="endpoint"
+              type="text"
+              value="https://fandbsoft.com/global/api/employee-info"
+            />
+          </label>
+          <label>
+            <div>Method</div>
+            <select id="method">
+              <option value="POST" selected>POST</option>
+              <option value="GET">GET</option>
+            </select>
+          </label>
+        </div>
+        <div style="margin-top: 12px">
+          <div>Body (JSON)</div>
+          <textarea id="bodyInput"> { "listEmployeeID": [1, 2, 3] }</textarea>
+        </div>
+        <div class="row" style="margin-top: 12px">
+          <button id="sendBtn">Send</button>
+          <button id="copyCodeBtn" type="button">Copy fetch code</button>
+          <span id="meta" class="muted"></span>
+        </div>
+      </div>
+      <div class="split">
+        <div class="card">
+          <div
+            class="row"
+            style="justify-content: space-between; align-items: baseline"
+          >
+            <strong>Response</strong> <span id="status" class="muted"></span>
+          </div>
+          <pre id="response" style="margin-top: 8px"><code></code></pre>
+        </div>
+        <div class="card">
+          <strong>Generated fetch code</strong>
+          <pre id="code"><code></code></pre>
+        </div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top: 16px">
+      Lưu ý CORS: Nếu server không cho phép cross-origin, gọi trực tiếp từ trình
+      duyệt có thể lỗi. Hãy chạy qua một HTTP server cục bộ hoặc proxy nếu cần.
+    </p>
+    <script>
+      const $ = (s) => document.querySelector(s);
+      const endpointEl = $("#endpoint");
+      const methodEl = $("#method");
+      const bodyEl = $("#bodyInput");
+      const sendBtn = $("#sendBtn");
+      const copyCodeBtn = $("#copyCodeBtn");
+      const respPre = $("#response code");
+      const codePre = $("#code code");
+      const statusEl = $("#status");
+      const metaEl = $("#meta");
+      function fmt(obj) {
+        try {
+          return JSON.stringify(obj, null, 2);
+        } catch {
+          return String(obj);
+        }
+      }
+      function buildFetchSnippet() {
+        const url = endpointEl.value.trim();
+        const method = methodEl.value;
+        const raw = bodyEl.value.trim();
+        const bodyPart =
+          method === "GET" || !raw ? "" : `,\n  body: JSON.stringify(${raw})`;
+        return `fetch('${url}', {\n  method: '${method}',\n  headers: {\n    'Content-Type': 'application/json',\n    'Accept': 'application/json'\n  }${bodyPart}\n})\n  .then(r => r.json())\n  .then(console.log)\n  .catch(console.error);`;
+      }
+      function updateSnippet() {
+        codePre.textContent = buildFetchSnippet();
+      }
+      async function sendRequest() {
+        const url = endpointEl.value.trim();
+        const method = methodEl.value;
+        let payload = undefined;
+        const raw = bodyEl.value.trim();
+        if (raw && method !== "GET") {
+          try {
+            payload = JSON.parse(raw);
+          } catch (e) {
+            respPre.textContent = `Body JSON không hợp lệ:\n${e.message}`;
+            statusEl.textContent = "";
+            return;
+          }
+        }
+        const started = performance.now();
+        statusEl.textContent = "Loading…";
+        metaEl.textContent = "";
+        respPre.textContent = "";
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: method === "GET" ? undefined : JSON.stringify(payload ?? {}),
+          });
+          const elapsed = Math.round(performance.now() - started);
+          statusEl.textContent = `${res.status} ${res.statusText} • ${elapsed} ms`;
+          metaEl.textContent = `URL: ${url}`;
+          const ct = res.headers.get("content-type") || "";
+          const text = await res.text();
+          if (ct.includes("application/json")) {
+            try {
+              respPre.textContent = fmt(JSON.parse(text));
+            } catch {
+              respPre.textContent = text;
+            }
+          } else {
+            respPre.textContent = text;
+          }
+        } catch (err) {
+          statusEl.textContent = "Request failed";
+          respPre.textContent = String(err);
+        }
+      }
+      sendBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        sendRequest();
+      });
+      copyCodeBtn.addEventListener("click", async () => {
+        const code = buildFetchSnippet();
+        try {
+          await navigator.clipboard.writeText(code);
+          metaEl.textContent = "Đã copy code vào clipboard.";
+        } catch {
+          metaEl.textContent =
+            "Không thể copy tự động. Hãy chọn và copy thủ công.";
+        }
+      });
+      endpointEl.addEventListener("input", updateSnippet);
+      methodEl.addEventListener("change", updateSnippet);
+      bodyEl.addEventListener("input", updateSnippet);
+      updateSnippet();
+    </script>
+  </body>
+</html>
